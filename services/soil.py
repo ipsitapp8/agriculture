@@ -17,6 +17,18 @@ def _cache_get(key):
 def _cache_set(key, val, ttl):
     _cache[key] = (time.time() + ttl, val)
 
+def _http_get_with_retry(url, params, timeout=20, retries=2, backoff=0.5):
+    last = None
+    for i in range(retries + 1):
+        try:
+            r = requests.get(url, params=params, timeout=timeout)
+            return r
+        except Exception as e:
+            last = e
+            if i < retries:
+                time.sleep(backoff * (2 ** i))
+    raise last
+
 def _classify_texture(sand, silt, clay):
     if sand >= 70 and clay <= 20:
         return "sandy"
@@ -59,7 +71,7 @@ def get_soil(lat, lon):
             "depth": "0-5cm",
             "value": "mean"
         }
-        r = requests.get(url, params=params, timeout=20)
+        r = _http_get_with_retry(url, params, timeout=20)
         j = r.json()
         props = {p["name"]: p["mean"] for p in j.get("properties", [])}
         ph = float(props.get("phh2o", 6.5))

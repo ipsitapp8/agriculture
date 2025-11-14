@@ -1,4 +1,5 @@
-from flask import Flask
+from flask import Flask, Response
+import os
 from routes.pages import bp as pages_bp
 from routes.weather import bp as weather_bp
 from routes.soil import bp as soil_bp
@@ -12,6 +13,11 @@ def create_app():
     app.register_blueprint(soil_bp)
     app.register_blueprint(recommend_bp)
     app.register_blueprint(calendar_bp)
+    @app.route('/favicon.ico')
+    def favicon():
+        p = os.path.join(app.static_folder, 'favicon.svg')
+        with open(p, 'rb') as f:
+            return Response(f.read(), mimetype='image/svg+xml')
     return app
 
 app = create_app()

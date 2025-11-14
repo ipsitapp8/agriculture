@@ -9,15 +9,25 @@ bp = Blueprint("recommend", __name__)
 
 @bp.post("/api/recommend")
 def recommend():
-    body = request.get_json(silent=True) or {}
-    lat = body.get("lat")
-    lon = body.get("lon")
-    if lat is None or lon is None:
-        return jsonify({"error": "lat and lon required"}), 400
-    weather = get_weather(float(lat), float(lon))
-    soil = get_soil(float(lat), float(lon))
-    res = recommend_for_location(weather, soil)
-    return jsonify(res)
+    try:
+        body = request.get_json(silent=True) or {}
+        lat = body.get("lat")
+        lon = body.get("lon")
+        if lat is None or lon is None:
+            return jsonify({"error": "lat and lon required"}), 400
+        try:
+            latf = float(lat)
+            lonf = float(lon)
+        except (ValueError, TypeError):
+            return jsonify({"error": "invalid coordinates"}), 400
+        if not (-90 <= latf <= 90 and -180 <= lonf <= 180):
+            return jsonify({"error": "out of range coordinates"}), 400
+        weather = get_weather(latf, lonf)
+        soil = get_soil(latf, lonf)
+        res = recommend_for_location(weather, soil)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": "Internal server error", "message": str(e)}), 500
 
 @bp.get("/api/crops")
 def crops():
@@ -25,16 +35,19 @@ def crops():
 
 @bp.post("/api/export/csv")
 def export_csv():
-    body = request.get_json(silent=True) or {}
-    recs = body.get("recs", [])
-    fields = body.get("fields", [])
-    if not recs or not fields:
-        return jsonify({"error": "recs and fields required"}), 400
-    buffer = io.StringIO()
-    writer = csv.writer(buffer)
-    writer.writerow(fields)
-    for r in recs:
-        row = [r.get(f, "") for f in fields]
-        writer.writerow(row)
-    buffer.seek(0)
-    return Response(buffer.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=crop_recommendations.csv"})
+    try:
+        body = request.get_json(silent=True) or {}
+        recs = body.get("recs", [])
+        fields = body.get("fields", [])
+        if not isinstance(recs, list) or not isinstance(fields, list) or not recs or not fields:
+            return jsonify({"error": "recs and fields required"}), 400
+        buffer = io.StringIO()
+        writer = csv.writer(buffer)
+        writer.writerow(fields)
+        for r in recs:
+            row = [r.get(f, "") for f in fields]
+            writer.writerow(row)
+        buffer.seek(0)
+        return Response(buffer.getvalue(), mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=crop_recommendations.csv"})
+    except Exception as e:
+        return jsonify({"error": "Export failed", "message": str(e)}), 500

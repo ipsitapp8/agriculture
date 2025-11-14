@@ -66,15 +66,12 @@ async function run(){
   
   // Render current conditions
   currentGrid.innerHTML = ''
-  if (currentData.current_months) {
-    currentData.current_months.forEach(m=>{ 
-      currentGrid.appendChild(renderMonth(m, true)) 
-    })
-  } else if (currentData.months) {
-    // Fallback for older API response format
+  if (currentData.months) {
     currentData.months.forEach(m=>{ 
-      currentGrid.appendChild(renderMonth(m, true)) 
+      currentGrid.appendChild(renderMonth(m, false)) 
     })
+  } else {
+    currentGrid.innerHTML = '<div class="no-data">No current conditions data available</div>'
   }
   
   // Render climatology data

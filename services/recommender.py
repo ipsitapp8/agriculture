@@ -332,23 +332,36 @@ def month_statuses(weather, soil):
     # Climatology view
     climatology_months = []
     climatology = weather.get("climatology", {}).get("monthly", [])
+    ph = float(soil.get("ph", 6.5))
+    soc = float(soil.get("soc_pct", 1.0))
+    tex = soil.get("texture", "loam")
     for i, m in enumerate(names, start=1):
         month_data = next((item for item in climatology if item.get("month") == i), None)
-        if month_data and best:
-            # Simple climatology-based recommendation
-            temp_ok = month_data.get("temp", 0) >= best.get("factors", {}).get("temp", {}).get("ideal", [0,0])[0]
-            rain_ok = month_data.get("rain", 0) >= best.get("factors", {}).get("rain", {}).get("ideal", [0,0])[0]
-            clim_status = "green" if (temp_ok and rain_ok) else "yellow"
-            clim_note = f"{best['crop']} (climate avg)"
-            clim_planting_ok = i in best.get("metadata", {}).get("planting_months", [])
+        if month_data:
+            tval = float(month_data.get("temp", 0) or 0)
+            rval = float(month_data.get("rain", 0) or 0)
+            scored = []
+            for c in CROPS:
+                r = _score_linear(rval, *c["rain"], WEIGHTS["rain"])
+                t = _score_linear(tval, *c["temp"], WEIGHTS["temp"])
+                p = _score_linear(ph, *c["ph"], WEIGHTS["ph"])
+                s = _score_linear(soc, *c["soc"], WEIGHTS["soc"])
+                x = _texture_score(tex, c["textures"], WEIGHTS["texture"])
+                score = r + t + p + s + x
+                scored.append((score, c))
+            scored.sort(key=lambda y: y[0], reverse=True)
+            top_score, top_crop = scored[0]
+            clim_status = _status(top_score)
+            clim_note = f"{top_crop['name']} (climate avg)"
+            clim_planting_ok = i in top_crop.get("metadata", {}).get("planting_months", [])
         else:
             clim_status = "yellow"
             clim_note = "No climate data"
             clim_planting_ok = False
         climatology_months.append({
-            "month": m, 
-            "status": clim_status, 
-            "note": clim_note, 
+            "month": m,
+            "status": clim_status,
+            "note": clim_note,
             "planting_ok": clim_planting_ok,
             "temp": month_data.get("temp", "N/A") if month_data else "N/A",
             "rain": month_data.get("rain", "N/A") if month_data else "N/A"

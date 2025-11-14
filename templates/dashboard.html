@@ -8,10 +8,11 @@
 </div>
 
 <section class="controls">
-  <input id="location-input" placeholder="🔍 Enter city, state, or coordinates..." style="flex: 1; min-width: 250px;">
-  <button id="search-btn" class="btn"><i class="fas fa-search"></i> Search</button>
-  <div id="coord" style="padding: 0.5rem 1rem; background: var(--bg-secondary); border-radius: var(--radius); color: var(--text-secondary); font-size: 0.875rem; white-space: nowrap;"></div>
-  <span id="status" class="status"></span>
+  <label for="location-input" style="position:absolute;left:-9999px">Location</label>
+  <input id="location-input" placeholder="🔍 Enter city, state, or coordinates..." aria-label="Search location" style="flex: 1; min-width: 250px;" autocomplete="off">
+  <button id="search-btn" class="btn" aria-label="Search"><i class="fas fa-search"></i> Search</button>
+  <div id="coord" style="padding: 0.5rem 1rem; background: var(--bg-secondary); border-radius: var(--radius); color: var(--text-secondary); font-size: 0.875rem; white-space: nowrap;" aria-label="Coordinates"></div>
+  <span id="status" class="status" role="status" aria-live="polite"></span>
   <a class="btn secondary" href="/rec"><i class="fas fa-seedling"></i> View Recommendations</a>
 </section>
 
